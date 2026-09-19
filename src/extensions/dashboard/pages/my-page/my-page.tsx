@@ -1,25 +1,9 @@
 import type { FC } from 'react';
-import { EmptyState, Page, WixDesignSystemProvider } from '@wix/design-system';
-import '@wix/design-system/styles.global.css';
+import '../../../../styles/globals.css';
+import Dashboard from '../../../../dashboard/pages/page';
 
-const DashboardPage: FC = () => {
-  return (
-    <WixDesignSystemProvider>
-      <Page>
-        <Page.Header
-          title="My Page"
-          subtitle="This is a subtitle for your page"
-        />
-        <Page.Content>
-          <EmptyState
-            title="My Page"
-            subtitle="Edit src/extensions/dashboard/pages/my-page/my-page.tsx to change this text."
-            skin="page"
-          />
-        </Page.Content>
-      </Page>
-    </WixDesignSystemProvider>
-  );
+const DashboardPageExtension: FC = () => {
+  return <Dashboard />;
 };
 
-export default DashboardPage;
+export default DashboardPageExtension;

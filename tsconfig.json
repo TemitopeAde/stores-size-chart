@@ -1,5 +1,11 @@
 {
   "extends": "astro/tsconfigs/strict",
-  "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist"]
+  "compilerOptions": {
+    "verbatimModuleSyntax": false,
+    "noImplicitAny": false,
+    "jsx": "react-jsx",
+    "moduleResolution": "bundler"
+  },
+  "include": [".astro/types.d.ts", "src/**/*"],
+  "exclude": ["dist", "**/*.test.ts"]
 }
