@@ -3,47 +3,7 @@ import { SizeChart, PaginatedResponse } from '../types/charts';
 import { getSizeChartById, getSizeCharts } from './chart-service';
 import { getStoreProduct } from './product-service';
 
-let memoryAssignments: ChartAssignment[] = [
-  {
-    _id: 'assign-1',
-    chartId: 'chart-mens-tops-default',
-    assignmentType: 'category',
-    categoryId: 'cat-mens',
-    priority: 10,
-    active: true,
-    createdDate: new Date(Date.now() - 86400000 * 5).toISOString(),
-    updatedDate: new Date(Date.now() - 86400000 * 2).toISOString(),
-  },
-  {
-    _id: 'assign-2',
-    chartId: 'chart-womens-dresses-default',
-    assignmentType: 'category',
-    categoryId: 'cat-womens',
-    priority: 10,
-    active: true,
-    createdDate: new Date(Date.now() - 86400000 * 4).toISOString(),
-    updatedDate: new Date(Date.now() - 86400000 * 1).toISOString(),
-  },
-  {
-    _id: 'assign-3',
-    chartId: 'chart-shoes-default',
-    assignmentType: 'category',
-    categoryId: 'cat-shoes',
-    priority: 10,
-    active: true,
-    createdDate: new Date(Date.now() - 86400000 * 3).toISOString(),
-    updatedDate: new Date(Date.now() - 86400000 * 1).toISOString(),
-  },
-  {
-    _id: 'assign-default',
-    chartId: 'chart-mens-tops-default',
-    assignmentType: 'default',
-    priority: 0,
-    active: true,
-    createdDate: new Date(Date.now() - 86400000 * 10).toISOString(),
-    updatedDate: new Date(Date.now() - 86400000 * 10).toISOString(),
-  },
-];
+let memoryAssignments: ChartAssignment[] = [];
 
 /**
  * Backend search, sort, and pagination for chart assignments.
@@ -228,7 +188,17 @@ export async function resolveChartForProduct(productId: string): Promise<SizeCha
     }
   }
 
-  // Level 4: Default fallback assignment
+  // Level 4: All Products assignment (Storewide)
+  const allProductsAssign = activeAssignments
+    .filter((a) => a.assignmentType === 'all')
+    .sort((a, b) => b.priority - a.priority)[0];
+
+  if (allProductsAssign) {
+    const chart = await getSizeChartById(allProductsAssign.chartId);
+    if (chart && chart.status === 'ACTIVE') return chart;
+  }
+
+  // Level 5: Default fallback assignment
   const defaultAssign = activeAssignments.find((a) => a.assignmentType === 'default');
   if (defaultAssign) {
     const chart = await getSizeChartById(defaultAssign.chartId);

@@ -90,6 +90,8 @@ class SizeChartSitePluginElement extends HTMLElement {
     }
   }
 
+  private isCalculating = false;
+
   private toggleModal(open: boolean) {
     this.isOpen = open;
     if (open) {
@@ -108,6 +110,9 @@ class SizeChartSitePluginElement extends HTMLElement {
 
   private async submitFitCalculation() {
     if (!this.chart) return;
+    this.isCalculating = true;
+    this.render();
+
     try {
       const res = await calculateFit(this.chart._id, this.fitAnswers, this.activeUnit);
       this.fitRecommendation = res;
@@ -117,8 +122,12 @@ class SizeChartSitePluginElement extends HTMLElement {
         chartId: this.chart._id,
         size: res?.recommendedSize,
       });
+    } catch (e) {
+      console.error('[FitFinder] Calculation error:', e);
+    } finally {
+      this.isCalculating = false;
       this.render();
-    } catch {}
+    }
   }
 
   render() {
@@ -176,16 +185,32 @@ class SizeChartSitePluginElement extends HTMLElement {
                       <div style="display: flex; align-items: center; justify-content: space-between;">
                         <div style="display: flex; align-items: center; gap: 8px;">
                           <span style="font-size: 16px;">✨</span>
-                          <span style="font-size: 13px; font-weight: 600; color: #1e40af;">${t('fitFinder.title')}</span>
+                          <div>
+                            <span style="font-size: 13px; font-weight: 700; color: #1e40af;">${t('fitFinder.title')}</span>
+                            ${this.chart.fitFinderConfig?.aiEnabled !== false ? `
+                              <span style="display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 700; background: #dbeafe; color: #1e40af; padding: 1px 6px; border-radius: 4px; border: 1px solid #93c5fd;">AI Powered</span>
+                            ` : ''}
+                          </div>
                         </div>
                         <button id="sg-start-fit" style="background: #2563eb; color: #ffffff; border: none; padding: 6px 12px; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer;">
                           ${t('fitFinder.calculateBtn')}
                         </button>
                       </div>
+                    ` : this.isCalculating ? `
+                      <div style="text-align: center; padding: 24px 12px;">
+                        <div style="display: inline-block; font-size: 24px; animation: spin 1.5s linear infinite; margin-bottom: 8px;">✨</div>
+                        <div style="font-size: 13px; font-weight: 700; color: #1e40af;">Analyzing your fit with AI...</div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Evaluating garment grading and body proportions</div>
+                      </div>
                     ` : `
                       <div>
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                          <span style="font-size: 12px; font-weight: 700; color: #1e40af;">${t('fitFinder.stepOf', { current: this.fitStep, total: 3 })}</span>
+                          <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="font-size: 12px; font-weight: 700; color: #1e40af;">${t('fitFinder.stepOf', { current: this.fitStep, total: 3 })}</span>
+                            ${this.chart.fitFinderConfig?.aiEnabled !== false ? `
+                              <span style="font-size: 9px; font-weight: 700; background: #dbeafe; color: #1e40af; padding: 1px 5px; border-radius: 3px;">AI</span>
+                            ` : ''}
+                          </div>
                           <button id="sg-close-fit" style="background: none; border: none; font-size: 11px; color: #64748b; cursor: pointer;">${t('common.cancel')}</button>
                         </div>
 
@@ -233,12 +258,30 @@ class SizeChartSitePluginElement extends HTMLElement {
 
                         ${this.fitStep === 4 && this.fitRecommendation ? `
                           <div style="text-align: center; padding: 8px 0;">
-                            <span style="font-size: 11px; font-weight: bold; color: #16a34a; text-transform: uppercase;">${t('fitFinder.recommendedSizeTitle')}</span>
-                            <div style="font-size: 32px; font-weight: 800; color: #1e40af; margin: 4px 0;">${this.fitRecommendation.recommendedSize}</div>
-                            <p style="font-size: 12px; color: #475569; margin: 4px 0 12px;">
-                              ${this.fitRecommendation.explanation?.fitNote || ''}
+                            <div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #16a34a; text-transform: uppercase; background: #dcfce7; padding: 3px 8px; border-radius: 9999px; margin-bottom: 6px;">
+                              <span>${this.fitRecommendation.aiGenerated ? '✨ AI Recommended Size' : t('fitFinder.recommendedSizeTitle')}</span>
+                              ${this.fitRecommendation.confidence ? `<span style="opacity: 0.8;">(${this.fitRecommendation.confidence}%)</span>` : ''}
+                            </div>
+                            <div style="font-size: 34px; font-weight: 800; color: #1e40af; margin: 2px 0 6px;">${this.fitRecommendation.recommendedSize}</div>
+                            
+                            <p style="font-size: 12px; color: #334155; margin: 4px 0 8px; line-height: 1.45; text-align: left; background: #ffffff; padding: 10px 12px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                              ${this.fitRecommendation.aiReasoning || this.fitRecommendation.explanation?.fitNote || ''}
                             </p>
-                            <button id="fit-restart" style="background: #e2e8f0; color: #334155; border: none; padding: 6px 12px; border-radius: 5px; font-size: 12px; cursor: pointer;">${t('fitFinder.startOverBtn')}</button>
+
+                            ${this.fitRecommendation.fitTips ? `
+                              <div style="font-size: 11px; color: #1e40af; background: #dbeafe; padding: 6px 10px; border-radius: 6px; margin-bottom: 10px; text-align: left; display: flex; align-items: flex-start; gap: 6px;">
+                                <span>💡</span>
+                                <span>${this.fitRecommendation.fitTips}</span>
+                              </div>
+                            ` : ''}
+
+                            ${this.fitRecommendation.isBetweenSizes && this.fitRecommendation.alternativeSize ? `
+                              <div style="font-size: 11px; color: #64748b; margin-bottom: 10px;">
+                                ↔ Also consider size <strong>${this.fitRecommendation.alternativeSize}</strong> depending on personal layering preference.
+                              </div>
+                            ` : ''}
+
+                            <button id="fit-restart" style="background: #e2e8f0; color: #334155; border: none; padding: 6px 12px; border-radius: 5px; font-size: 12px; cursor: pointer; font-weight: 600;">${t('fitFinder.startOverBtn')}</button>
                           </div>
                         ` : ''}
                       </div>

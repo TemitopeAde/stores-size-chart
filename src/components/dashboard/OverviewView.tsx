@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from '../../i18n';
+import { dashboard } from '@wix/dashboard';
 import { PluginStatus } from '../plugin-status/PluginStatus';
 import { dashboardApi } from '../../api/dashboard-client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
@@ -17,50 +18,153 @@ import {
   TrendingUp,
   Package,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export interface OverviewViewProps {
   onNavigate: (tab: string) => void;
   onCreateChart: () => void;
 }
 
+const CHECKLIST_STORAGE_KEY = 'stores_size_chart_checklist_completed';
+
 export const OverviewView: React.FC<OverviewViewProps> = ({ onNavigate, onCreateChart }) => {
   const { t } = useTranslation();
 
-  const [chartsCount, setChartsCount] = useState(3);
-  const [activeCount, setActiveCount] = useState(3);
+  const [chartsCount, setChartsCount] = useState(0);
+  const [productsWithCharts, setProductsWithCharts] = useState(0);
   const [analytics, setAnalytics] = useState<any>(null);
-  const [completedSteps, setCompletedSteps] = useState<number[]>([1, 2, 3]);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
 
   useEffect(() => {
     async function load() {
       try {
-        const [chartsRes, anRes] = await Promise.all([
-          dashboardApi.getCharts({ limit: 1 }),
+        const [chartsRes, anRes, assignRes, pluginRes, settingsRes] = await Promise.all([
+          dashboardApi.getCharts({ limit: 50 }),
           dashboardApi.getAnalytics(30),
+          dashboardApi.getAssignments({ limit: 100 }),
+          dashboardApi.getPluginStatus().catch(() => null),
+          dashboardApi.getWidgetSettings().catch(() => null),
         ]);
+
         setChartsCount(chartsRes.totalCount);
-        setActiveCount(chartsRes.totalCount);
         setAnalytics(anRes);
-      } catch (e) {}
+
+        // Compute unique products covered by assignments
+        const seenProducts = new Set<string>();
+        assignRes.items.forEach((a) => {
+          if (a.productIds) {
+            a.productIds.forEach((pid) => seenProducts.add(pid));
+          } else if (a.productId) {
+            seenProducts.add(a.productId);
+          }
+        });
+        setProductsWithCharts(
+          seenProducts.size > 0 ? seenProducts.size : assignRes.totalCount > 0 ? assignRes.totalCount : 0
+        );
+
+        // Retrieve manually checked steps from localStorage
+        let manualDone: number[] = [];
+        try {
+          if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem(CHECKLIST_STORAGE_KEY);
+            if (stored) manualDone = JSON.parse(stored);
+          }
+        } catch (e) {}
+
+        // Dynamically compute system completed onboarding steps
+        const autoDone: number[] = [];
+        if (chartsRes.totalCount > 0) autoDone.push(1);
+        if (assignRes.totalCount > 0) autoDone.push(2);
+        if (settingsRes?.updatedDate || settingsRes?._id) autoDone.push(3);
+        if (pluginRes?.status === 'ACTIVE') autoDone.push(4);
+        if ((anRes?.views ?? 0) > 0) autoDone.push(5);
+        if (chartsRes.items.some((c) => c.fitFinderEnabled) || settingsRes?.fitFinderSettings?.aiEnabled) {
+          autoDone.push(6);
+        }
+
+        const merged = Array.from(new Set([...autoDone, ...manualDone])).sort((a, b) => a - b);
+        setCompletedSteps(merged);
+      } catch (e) {
+        console.warn('[OverviewView] Error loading checklist state:', e);
+      }
     }
     load();
   }, []);
 
   const toggleStep = (stepNumber: number) => {
+    let next: number[];
     if (completedSteps.includes(stepNumber)) {
-      setCompletedSteps(completedSteps.filter((s) => s !== stepNumber));
+      next = completedSteps.filter((s) => s !== stepNumber);
     } else {
-      setCompletedSteps([...completedSteps, stepNumber]);
+      next = [...completedSteps, stepNumber].sort((a, b) => a - b);
     }
+    setCompletedSteps(next);
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(CHECKLIST_STORAGE_KEY, JSON.stringify(next));
+      }
+    } catch (e) {}
+  };
+
+  const handleOpenEditor = async () => {
+    try {
+      if (typeof dashboard !== 'undefined' && typeof dashboard.getSiteInfo === 'function') {
+        const siteInfo = await dashboard.getSiteInfo();
+        const siteId = (siteInfo as any)?.siteId;
+        if (siteId) {
+          window.open(`https://manage.wix.com/dashboard/${siteId}/editor`, '_blank');
+          return;
+        }
+      }
+    } catch (e) {}
+
+    window.open('https://manage.wix.com/editor', '_blank');
+  };
+
+  const handlePreviewStep = () => {
+    toggleStep(5);
+    onNavigate('settings-widget');
+    toast.info('Preview the widget across Desktop, Tablet, and Mobile in the Widget Customizer!');
+    toast.info(t('overview.previewToast'));
   };
 
   const steps = [
-    { num: 1, titleKey: 'onboarding.step1Title', descKey: 'onboarding.step1Desc', action: onCreateChart },
-    { num: 2, titleKey: 'onboarding.step2Title', descKey: 'onboarding.step2Desc', action: () => onNavigate('assignments') },
-    { num: 3, titleKey: 'onboarding.step3Title', descKey: 'onboarding.step3Desc', action: () => onNavigate('settings-widget') },
-    { num: 4, titleKey: 'onboarding.step4Title', descKey: 'onboarding.step4Desc', action: () => {} },
-    { num: 5, titleKey: 'onboarding.step5Title', descKey: 'onboarding.step5Desc', action: () => onNavigate('settings-widget') },
-    { num: 6, titleKey: 'onboarding.step6Title', descKey: 'onboarding.step6Desc', action: () => onNavigate('fitFinder') },
+    {
+      num: 1,
+      titleKey: 'onboarding.step1Title',
+      descKey: 'onboarding.step1Desc',
+      action: onCreateChart,
+    },
+    {
+      num: 2,
+      titleKey: 'onboarding.step2Title',
+      descKey: 'onboarding.step2Desc',
+      action: () => onNavigate('assignments'),
+    },
+    {
+      num: 3,
+      titleKey: 'onboarding.step3Title',
+      descKey: 'onboarding.step3Desc',
+      action: () => onNavigate('settings-widget'),
+    },
+    {
+      num: 4,
+      titleKey: 'onboarding.step4Title',
+      descKey: 'onboarding.step4Desc',
+      action: handleOpenEditor,
+    },
+    {
+      num: 5,
+      titleKey: 'onboarding.step5Title',
+      descKey: 'onboarding.step5Desc',
+      action: handlePreviewStep,
+    },
+    {
+      num: 6,
+      titleKey: 'onboarding.step6Title',
+      descKey: 'onboarding.step6Desc',
+      action: () => onNavigate('fitFinder'),
+    },
   ];
 
   return (
@@ -86,7 +190,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onNavigate, onCreate
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-muted-foreground">{t('overview.kpis.productsWithCharts')}</p>
-              <h3 className="text-2xl font-bold text-foreground mt-1">28</h3>
+              <h3 className="text-2xl font-bold text-foreground mt-1">{productsWithCharts}</h3>
             </div>
             <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400">
               <Package className="h-5 w-5" />
@@ -98,7 +202,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onNavigate, onCreate
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-muted-foreground">{t('overview.kpis.sizeGuideViews')}</p>
-              <h3 className="text-2xl font-bold text-foreground mt-1">{analytics?.views ?? 38}</h3>
+              <h3 className="text-2xl font-bold text-foreground mt-1">{analytics?.views ?? 0}</h3>
             </div>
             <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400">
               <Eye className="h-5 w-5" />
@@ -110,7 +214,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onNavigate, onCreate
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-muted-foreground">{t('overview.kpis.completionRate')}</p>
-              <h3 className="text-2xl font-bold text-foreground mt-1">{analytics?.completionRate ?? 85}%</h3>
+              <h3 className="text-2xl font-bold text-foreground mt-1">{analytics?.completionRate ?? 0}%</h3>
             </div>
             <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400">
               <TrendingUp className="h-5 w-5" />
@@ -130,7 +234,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onNavigate, onCreate
               </div>
               <div>
                 <p className="text-xs font-bold text-foreground">{t('overview.createChart')}</p>
-                <p className="text-[11px] text-muted-foreground">Add new table or template</p>
+                <p className="text-[11px] text-muted-foreground">{t('overview.createChartDesc')}</p>
               </div>
             </CardContent>
           </Card>
@@ -142,7 +246,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onNavigate, onCreate
               </div>
               <div>
                 <p className="text-xs font-bold text-foreground">{t('overview.assignCharts')}</p>
-                <p className="text-[11px] text-muted-foreground">Products, categories, rules</p>
+                <p className="text-[11px] text-muted-foreground">{t('overview.assignChartsDesc')}</p>
               </div>
             </CardContent>
           </Card>
@@ -154,7 +258,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onNavigate, onCreate
               </div>
               <div>
                 <p className="text-xs font-bold text-foreground">{t('overview.customizeWidget')}</p>
-                <p className="text-[11px] text-muted-foreground">Button, colors, modal styling</p>
+                <p className="text-[11px] text-muted-foreground">{t('overview.customizeWidgetDesc')}</p>
               </div>
             </CardContent>
           </Card>
@@ -166,7 +270,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onNavigate, onCreate
               </div>
               <div>
                 <p className="text-xs font-bold text-foreground">{t('overview.configureFitFinder')}</p>
-                <p className="text-[11px] text-muted-foreground">Fit preferences & weighting</p>
+                <p className="text-[11px] text-muted-foreground">{t('overview.configureFitFinderDesc')}</p>
               </div>
             </CardContent>
           </Card>
@@ -182,7 +286,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onNavigate, onCreate
               <CardDescription>{t('onboarding.subtitle')}</CardDescription>
             </div>
             <Badge variant="outline" className="text-xs">
-              {completedSteps.length} of 6 Complete
+              {t('onboarding.progress', { completed: completedSteps.length, total: 6 })}
             </Badge>
           </div>
         </CardHeader>
@@ -195,7 +299,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onNavigate, onCreate
                   <button
                     type="button"
                     onClick={() => toggleStep(s.num)}
-                    className="mt-0.5 text-muted-foreground hover:text-foreground"
+                    className="mt-0.5 text-muted-foreground hover:text-foreground cursor-pointer"
+                    aria-label={`Toggle step ${s.num}`}
                   >
                     {isDone ? (
                       <CheckCircle2 className="h-5 w-5 text-emerald-600" />
@@ -211,7 +316,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onNavigate, onCreate
                   </div>
                 </div>
 
-                <Button size="sm" variant="ghost" onClick={s.action} className="h-8 gap-1 text-xs shrink-0">
+                <Button size="sm" variant="ghost" onClick={s.action} className="h-8 gap-1 text-xs shrink-0 cursor-pointer">
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </div>
@@ -222,4 +327,3 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onNavigate, onCreate
     </div>
   );
 };
-

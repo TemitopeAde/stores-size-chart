@@ -39,7 +39,7 @@ export function isStorefrontEntitled(entitlement?: EntitlementInfo | any): boole
  */
 export function normalizeEntitlement(appInstance?: WixAppInstanceData | null): EntitlementInfo {
   if (!appInstance) {
-    // In local development or fallback
+    // In local development or fallback when no Wix App Instance is provided
     return {
       state: 'TRIAL_ACTIVE',
       isEntitled: true,
@@ -62,36 +62,40 @@ export function normalizeEntitlement(appInstance?: WixAppInstanceData | null): E
   const isPastExpiration = expirationDate ? expirationDate.getTime() < now.getTime() : false;
 
   const freeTrialInfo = billing?.freeTrialInfo;
-  const isFreeTrial = freeTrialInfo?.isFreeTrial ?? false;
-  const daysRemaining = freeTrialInfo?.daysRemaining ?? (
-    expirationDate ? Math.max(0, Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : undefined
-  );
+  const trialStatus = freeTrialInfo?.status;
+  const isFreeTrial =
+    trialStatus === 'IN_PROGRESS' ||
+    freeTrialInfo?.isFreeTrial === true ||
+    (freeTrialInfo?.endDate && trialStatus !== 'ENDED');
+
+  let daysRemaining: number | undefined;
+  if (freeTrialInfo?.daysRemaining !== undefined) {
+    daysRemaining = freeTrialInfo.daysRemaining;
+  } else if (freeTrialInfo?.endDate) {
+    const end = new Date(freeTrialInfo.endDate);
+    daysRemaining = Math.max(0, Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+  } else if (expirationDate) {
+    daysRemaining = Math.max(0, Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+  }
 
   const packageName = billing?.packageName?.toLowerCase() || '';
-  const planTier: PlanTier = packageName.includes('pro') ? 'pro' : 'starter';
+  const planTier: PlanTier = packageName.includes('enterprise')
+    ? 'enterprise'
+    : packageName.includes('pro')
+    ? 'pro'
+    : 'starter';
 
-  // 1. Paid active plan
-  if (!isFree && !isFreeTrial) {
-    if (isPastExpiration) {
-      return {
-        state: 'EXPIRED',
-        isEntitled: false,
-        canManageCharts: false,
-        canRenderChart: false,
-        planTier,
-        packageName: billing?.packageName,
-        isTrial: false,
-        freeTrialAvailable: false,
-      };
-    }
+  // 1. Trial Ended
+  if (trialStatus === 'ENDED') {
     return {
-      state: 'PAID_ACTIVE',
-      isEntitled: true,
-      canManageCharts: true,
-      canRenderChart: true,
+      state: 'TRIAL_EXPIRED',
+      isEntitled: false,
+      canManageCharts: false,
+      canRenderChart: false,
       planTier,
       packageName: billing?.packageName,
-      isTrial: false,
+      isTrial: true,
+      daysRemaining: 0,
       freeTrialAvailable: false,
     };
   }
@@ -117,14 +121,55 @@ export function normalizeEntitlement(appInstance?: WixAppInstanceData | null): E
       canManageCharts: true,
       canRenderChart: true,
       planTier,
-      packageName: billing?.packageName,
+      packageName: billing?.packageName || 'Pro Free Trial',
       isTrial: true,
-      daysRemaining,
+      daysRemaining: daysRemaining ?? 14,
+      expirationDate: freeTrialInfo?.endDate ? new Date(freeTrialInfo.endDate).toISOString() : expirationDateStr ?? undefined,
       freeTrialAvailable: false,
     };
   }
 
-  // 3. Free Tier (Free trial available to claim)
+  // 3. Paid active plan
+  if (!isFree) {
+    if (isPastExpiration) {
+      return {
+        state: 'EXPIRED',
+        isEntitled: false,
+        canManageCharts: false,
+        canRenderChart: false,
+        planTier,
+        packageName: billing?.packageName,
+        isTrial: false,
+        freeTrialAvailable: false,
+      };
+    }
+    if (billing?.autoRenewing === false) {
+      return {
+        state: 'CANCEL_PENDING_EXPIRATION',
+        isEntitled: true,
+        canManageCharts: true,
+        canRenderChart: true,
+        planTier,
+        packageName: billing?.packageName,
+        expirationDate: expirationDateStr ?? undefined,
+        isTrial: false,
+        freeTrialAvailable: false,
+      };
+    }
+    return {
+      state: 'PAID_ACTIVE',
+      isEntitled: true,
+      canManageCharts: true,
+      canRenderChart: true,
+      planTier,
+      packageName: billing?.packageName,
+      expirationDate: expirationDateStr ?? undefined,
+      isTrial: false,
+      freeTrialAvailable: false,
+    };
+  }
+
+  // 4. Free Tier (Free trial available to claim)
   if (isFree && freeTrialAvailable) {
     return {
       state: 'FREE_TRIAL_AVAILABLE',
@@ -137,7 +182,7 @@ export function normalizeEntitlement(appInstance?: WixAppInstanceData | null): E
     };
   }
 
-  // 4. Free Tier (Free trial not available or previously used)
+  // 5. Free Tier (Free trial not available or previously used)
   if (isFree && !freeTrialAvailable) {
     return {
       state: 'FREE_NO_TRIAL',
@@ -166,8 +211,9 @@ export function normalizeEntitlement(appInstance?: WixAppInstanceData | null): E
  */
 export async function getAppEntitlement(): Promise<EntitlementInfo> {
   try {
-    const instance = await appInstances.getAppInstance();
-    return normalizeEntitlement(instance as any);
+    const res = await appInstances.getAppInstance();
+    const instanceData = (res as any)?.instance ?? res;
+    return normalizeEntitlement(instanceData as any);
   } catch (error) {
     console.warn('[EntitlementService] Could not fetch AppInstance from Wix SDK, falling back:', error);
     return normalizeEntitlement(null);

@@ -498,7 +498,7 @@ export const ChartEditor: React.FC<ChartEditorProps> = ({
                           onClick={() => handleMoveRow(rIdx, 'up')}
                           disabled={rIdx === 0}
                           className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-30"
-                          title="Move Up"
+                          title={t('common.moveUp')}
                         >
                           <ArrowUp className="h-3.5 w-3.5" />
                         </button>
@@ -507,7 +507,7 @@ export const ChartEditor: React.FC<ChartEditorProps> = ({
                           onClick={() => handleMoveRow(rIdx, 'down')}
                           disabled={rIdx === rows.length - 1}
                           className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-30"
-                          title="Move Down"
+                          title={t('common.moveDown')}
                         >
                           <ArrowDown className="h-3.5 w-3.5" />
                         </button>

@@ -12,7 +12,7 @@ export const LocalizationSettingsView: React.FC = () => {
 
   const handleLanguageChange = (code: SupportedLocale) => {
     setLocale(code);
-    toast.success(`Language set to ${SUPPORTED_LOCALES[code].name}`);
+    toast.success(t('settings.langChanged', { lang: SUPPORTED_LOCALES[code].name }));
   };
 
   return (
@@ -32,7 +32,7 @@ export const LocalizationSettingsView: React.FC = () => {
             <Languages className="h-4 w-4 text-primary" />
             {t('settings.appLanguage')}
           </CardTitle>
-          <CardDescription>Select the active language for the merchant dashboard.</CardDescription>
+          <CardDescription>{t('settings.dashboardLangDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
@@ -66,15 +66,15 @@ export const LocalizationSettingsView: React.FC = () => {
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold">{t('settings.visitorLanguage')}</CardTitle>
           <CardDescription>
-            The storefront Size Guide automatically displays in the visitor's Wix site language with full fallback to English.
+            {t('settings.visitorLangDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-xs text-muted-foreground">
           <div className="p-3 rounded-lg border border-border bg-muted/20 space-y-1">
-            <span className="font-semibold text-foreground block">Automatic Storefront Resolution:</span>
-            <p>1. Requested Wix Visitor Site Locale (e.g. Spanish, German, French, Arabic)</p>
-            <p>2. Merchant custom translations (if provided)</p>
-            <p>3. Canonical application fallback</p>
+            <span className="font-semibold text-foreground block">{t('settings.resolutionTitle')}</span>
+            <p>{t('settings.resStep1')}</p>
+            <p>{t('settings.resStep2')}</p>
+            <p>{t('settings.resStep3')}</p>
           </div>
         </CardContent>
       </Card>

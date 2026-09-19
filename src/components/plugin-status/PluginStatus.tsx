@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from '../../i18n';
+import { dashboard } from '@wix/dashboard';
 import { dashboardApi } from '../../api/dashboard-client';
 import { PluginStatusResult } from '../../services/plugin-status-service';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
-import { CheckCircle2, AlertCircle, RefreshCw, PlusCircle, ExternalLink } from 'lucide-react';
+import { CheckCircle2, AlertCircle, RefreshCw, PlusCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export interface PluginStatusProps {
@@ -39,6 +40,18 @@ export const PluginStatus: React.FC<PluginStatusProps> = ({ onStatusChange, comp
   const handleAddPlugin = async () => {
     setAdding(true);
     try {
+      if (typeof dashboard !== 'undefined' && typeof dashboard.addSitePlugin === 'function') {
+        try {
+          await dashboard.addSitePlugin('9c33f261-2db4-4b52-95f7-41804b4092b3', {
+            slotId: 'product-page-details-2',
+          });
+          toast.success(t('pluginStatus.addSuccess'));
+          await fetchStatus();
+          return;
+        } catch (sdkErr: any) {
+          console.log('[PluginStatus] dashboard.addSitePlugin closed/error:', sdkErr);
+        }
+      }
       const ok = await dashboardApi.addPlugin();
       if (ok) {
         toast.success(t('pluginStatus.addSuccess'));
@@ -122,13 +135,6 @@ export const PluginStatus: React.FC<PluginStatusProps> = ({ onStatusChange, comp
               <Button size="sm" onClick={handleAddPlugin} disabled={adding} className="gap-1.5">
                 <PlusCircle className="h-4 w-4" />
                 {t('pluginStatus.add')}
-              </Button>
-            )}
-
-            {data.status === 'ACTIVE' && (
-              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => window.open('https://www.wix.com/dashboard', '_blank')}>
-                <ExternalLink className="h-4 w-4" />
-                {t('pluginStatus.manage')}
               </Button>
             )}
 

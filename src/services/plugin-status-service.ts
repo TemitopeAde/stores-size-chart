@@ -1,3 +1,5 @@
+import { appInstances } from '@wix/app-management';
+
 export type PluginPlacementStatus = 'ACTIVE' | 'NOT_ADDED' | 'CHECKING' | 'ERROR';
 
 export interface PluginStatusResult {
@@ -5,6 +7,8 @@ export interface PluginStatusResult {
   slotId?: string;
   appDefinitionId?: string;
   widgetId?: string;
+  siteId?: string;
+  editorUrl?: string;
   errorMessage?: string;
 }
 
@@ -15,13 +19,24 @@ let simulatedInstalled = true;
  */
 export async function checkSitePluginStatus(): Promise<PluginStatusResult> {
   try {
-    // In production Wix environment, queries Wix Site Plugins Placement Status API.
-    // In demo/test environment, returns active status or toggleable state.
+    let siteId: string | undefined;
+    let editorUrl: string = 'https://manage.wix.com/editor';
+
+    try {
+      const instanceRes = await appInstances.getAppInstance();
+      if (instanceRes.site?.siteId) {
+        siteId = instanceRes.site.siteId;
+        editorUrl = `https://manage.wix.com/dashboard/${siteId}/editor`;
+      }
+    } catch (e) {}
+
     return {
       status: simulatedInstalled ? 'ACTIVE' : 'NOT_ADDED',
       slotId: 'product-page-details-2',
       appDefinitionId: 'a0c68605-c2e7-4c8d-9ea1-767f9770e087',
-      widgetId: '6a25b678-53ec-4b37-a190-65fcd1ca1a63',
+      widgetId: '9c33f261-2db4-4b52-95f7-41804b4092b3',
+      siteId,
+      editorUrl,
     };
   } catch (error: any) {
     console.error('[PluginStatusService] Error checking site plugin status:', error);

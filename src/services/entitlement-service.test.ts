@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert';
-import { parseAppInstance, getAppEntitlement, isStorefrontEntitled } from './entitlement-service';
+import { parseAppInstance, getAppEntitlement, isStorefrontEntitled, normalizeEntitlement } from './entitlement-service';
 
 test('entitlement-service: default entitlement without token gives Free tier or Trial in dev', async () => {
   const entitlement = await getAppEntitlement();
@@ -46,4 +46,78 @@ test('entitlement-service: parses valid signed app instance token format', () =>
   assert.strictEqual(parsed?.packageId, 'growth-monthly');
   assert.strictEqual(parsed?.billingStatus, 'ACTIVE');
 });
+
+test('entitlement-service: normalizeEntitlement handles free trial in progress from Wix SDK', () => {
+  const futureDate = new Date();
+  futureDate.setDate(futureDate.getDate() + 10);
+
+  const entitlement = normalizeEntitlement({
+    instanceId: 'inst-abc',
+    isFree: false,
+    billing: {
+      packageName: 'Pro Trial',
+      freeTrialInfo: {
+        status: 'IN_PROGRESS',
+        endDate: futureDate,
+        daysRemaining: 10,
+      },
+    },
+  });
+
+  assert.strictEqual(entitlement.state, 'TRIAL_ACTIVE');
+  assert.strictEqual(entitlement.isTrial, true);
+  assert.strictEqual(entitlement.daysRemaining, 10);
+  assert.strictEqual(entitlement.isEntitled, true);
+  assert.strictEqual(entitlement.planTier, 'pro');
+});
+
+test('entitlement-service: normalizeEntitlement handles free trial ended from Wix SDK', () => {
+  const entitlement = normalizeEntitlement({
+    instanceId: 'inst-abc',
+    isFree: true,
+    billing: {
+      packageName: 'Pro Plan',
+      freeTrialInfo: {
+        status: 'ENDED',
+      },
+    },
+  });
+
+  assert.strictEqual(entitlement.state, 'TRIAL_EXPIRED');
+  assert.strictEqual(entitlement.isEntitled, false);
+  assert.strictEqual(entitlement.canManageCharts, false);
+});
+
+test('entitlement-service: normalizeEntitlement handles active paid plan', () => {
+  const futureDate = new Date();
+  futureDate.setFullYear(futureDate.getFullYear() + 1);
+
+  const entitlement = normalizeEntitlement({
+    instanceId: 'inst-abc',
+    isFree: false,
+    billing: {
+      packageName: 'Pro Annual',
+      autoRenewing: true,
+      expirationDate: futureDate.toISOString(),
+    },
+  });
+
+  assert.strictEqual(entitlement.state, 'PAID_ACTIVE');
+  assert.strictEqual(entitlement.isEntitled, true);
+  assert.strictEqual(entitlement.isTrial, false);
+  assert.strictEqual(entitlement.planTier, 'pro');
+});
+
+test('entitlement-service: normalizeEntitlement handles free trial available to claim', () => {
+  const entitlement = normalizeEntitlement({
+    instanceId: 'inst-abc',
+    isFree: true,
+    freeTrialAvailable: true,
+  });
+
+  assert.strictEqual(entitlement.state, 'FREE_TRIAL_AVAILABLE');
+  assert.strictEqual(entitlement.freeTrialAvailable, true);
+  assert.strictEqual(entitlement.isEntitled, true);
+});
+
 

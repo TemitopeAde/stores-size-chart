@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui
 import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
 import { Badge } from '../ui/badge';
-import { Sparkles, Sliders, CheckCircle2, Save } from 'lucide-react';
+import { Sparkles, Sliders, Save, Bot, Play } from 'lucide-react';
 import { toast } from 'sonner';
+import { TestFitFinderDialog } from './TestFitFinderDialog';
 
 export const FitFinderConfigurator: React.FC = () => {
   const { t } = useTranslation();
@@ -16,6 +17,7 @@ export const FitFinderConfigurator: React.FC = () => {
   const [selectedChartId, setSelectedChartId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showTestModal, setShowTestModal] = useState(false);
 
   // Configuration state
   const [enabled, setEnabled] = useState(true);
@@ -33,6 +35,10 @@ export const FitFinderConfigurator: React.FC = () => {
   const [waistWeight, setWaistWeight] = useState<'high' | 'medium' | 'low'>('high');
   const [heightWeight, setHeightWeight] = useState<'high' | 'medium' | 'low'>('medium');
   const [weightWeight, setWeightWeight] = useState<'high' | 'medium' | 'low'>('low');
+
+  // AI Configuration state
+  const [aiEnabled, setAiEnabled] = useState(true);
+  const [aiCustomInstructions, setAiCustomInstructions] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -63,6 +69,10 @@ export const FitFinderConfigurator: React.FC = () => {
     setAskShoulder(cfg.askShoulder ?? false);
     setAskFootLength(cfg.askFootLength ?? false);
     setAllowFitPreferences(cfg.allowFitPreferences ?? true);
+
+    // AI Config
+    setAiEnabled(cfg.aiEnabled ?? true);
+    setAiCustomInstructions(cfg.aiCustomInstructions || '');
   };
 
   const handleSelectChart = (id: string) => {
@@ -93,6 +103,8 @@ export const FitFinderConfigurator: React.FC = () => {
             { measurement: 'height', weight: heightWeight },
             { measurement: 'weight', weight: weightWeight },
           ],
+          aiEnabled,
+          aiCustomInstructions: aiCustomInstructions.trim() || undefined,
         },
       });
       toast.success(t('notifications.settingsSaved'));
@@ -107,6 +119,8 @@ export const FitFinderConfigurator: React.FC = () => {
     return <div className="p-8 text-center text-sm text-muted-foreground">{t('common.loading')}</div>;
   }
 
+  const selectedChart = charts.find((c) => c._id === selectedChartId) || null;
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -118,10 +132,23 @@ export const FitFinderConfigurator: React.FC = () => {
           <p className="text-sm text-muted-foreground mt-0.5">{t('fitFinder.subtitle')}</p>
         </div>
 
-        <Button onClick={handleSave} disabled={saving} className="gap-1.5 text-xs">
-          <Save className="h-4 w-4" />
-          {t('common.save')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowTestModal(true)}
+            disabled={!selectedChart}
+            className="gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/5"
+          >
+            <Play className="h-3.5 w-3.5 fill-primary text-primary" />
+            {t('fitFinder.testFinder')}
+          </Button>
+
+          <Button onClick={handleSave} disabled={saving} className="gap-1.5 text-xs">
+            <Save className="h-4 w-4" />
+            {t('common.save')}
+          </Button>
+        </div>
       </div>
 
       {/* Choose Chart Target */}
@@ -146,6 +173,56 @@ export const FitFinderConfigurator: React.FC = () => {
             <span className="text-xs font-medium text-foreground">{t('fitFinder.statusToggle')}</span>
             <Switch checked={enabled} onCheckedChange={setEnabled} aria-label={t('fitFinder.statusToggle')} />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* AI Smart Finder Section */}
+      <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-background to-background">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bot className="h-5 w-5 text-primary" />
+              <div>
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  {t('fitFinder.aiCardTitle')}
+                  <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">
+                    {t('fitFinder.aiPoweredBadge')}
+                  </Badge>
+                </CardTitle>
+                <CardDescription className="mt-0.5">
+                  {t('fitFinder.aiCardDesc')}
+                </CardDescription>
+              </div>
+            </div>
+            <Switch
+              checked={aiEnabled}
+              onCheckedChange={setAiEnabled}
+              aria-label={t('fitFinder.aiCardTitle')}
+            />
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-1">
+          {aiEnabled ? (
+            <div>
+              <label className="text-xs font-semibold text-foreground block mb-1">
+                {t('fitFinder.aiCustomInstructionsLabel')}
+              </label>
+              <textarea
+                value={aiCustomInstructions}
+                onChange={(e) => setAiCustomInstructions(e.target.value)}
+                rows={2}
+                placeholder={t('fitFinder.aiCustomInstructionsPlaceholder')}
+                className="w-full rounded-md border border-input bg-background p-2.5 text-xs text-foreground focus:ring-1 focus:ring-primary resize-y"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {t('fitFinder.aiCustomInstructionsDesc')}
+              </p>
+            </div>
+          ) : (
+            <div className="p-3 rounded-md bg-muted/30 border border-border text-xs text-muted-foreground">
+              {t('fitFinder.aiDisabledNotice')}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -187,8 +264,8 @@ export const FitFinderConfigurator: React.FC = () => {
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between p-3 rounded-lg border border-border">
             <div>
-              <p className="text-xs font-semibold text-foreground">Allow Fit Preference Selection</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Shoppers can pick Slim, Regular, or Relaxed.</p>
+              <p className="text-xs font-semibold text-foreground">{t('fitFinder.fitPreferencesTitle')}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{t('fitFinder.allowPreferences')}</p>
             </div>
             <Switch checked={allowFitPreferences} onCheckedChange={setAllowFitPreferences} />
           </div>
@@ -196,15 +273,15 @@ export const FitFinderConfigurator: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
             <div className="p-3 rounded border border-border bg-card text-xs">
               <span className="font-bold text-foreground block mb-1">1. {t('fitFinder.slim')}</span>
-              <p className="text-[11px] text-muted-foreground">Favors snug sizing when measurements fall near borders.</p>
+              <p className="text-[11px] text-muted-foreground">{t('fitFinder.slim')}</p>
             </div>
             <div className="p-3 rounded border border-border bg-card text-xs">
               <span className="font-bold text-foreground block mb-1">2. {t('fitFinder.regular')}</span>
-              <p className="text-[11px] text-muted-foreground">Balanced sizing matching standard comfort.</p>
+              <p className="text-[11px] text-muted-foreground">{t('fitFinder.regular')}</p>
             </div>
             <div className="p-3 rounded border border-border bg-card text-xs">
               <span className="font-bold text-foreground block mb-1">3. {t('fitFinder.relaxed')}</span>
-              <p className="text-[11px] text-muted-foreground">Favors roomier sizing when measurements fall near borders.</p>
+              <p className="text-[11px] text-muted-foreground">{t('fitFinder.relaxed')}</p>
             </div>
           </div>
         </CardContent>
@@ -270,7 +347,13 @@ export const FitFinderConfigurator: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Interactive Smart Fit Finder Test Simulator Dialog */}
+      <TestFitFinderDialog
+        open={showTestModal}
+        onOpenChange={setShowTestModal}
+        chart={selectedChart}
+      />
     </div>
   );
 };
-

@@ -15,7 +15,6 @@ import { WidgetSettingsView } from '../../components/settings/WidgetSettingsView
 import { LocalizationSettingsView } from '../../components/settings/LocalizationSettingsView';
 import { BillingSettingsView } from '../../components/settings/BillingSettingsView';
 import { GeneralSettingsView } from '../../components/settings/GeneralSettingsView';
-import { DataSettingsView } from '../../components/settings/DataSettingsView';
 import { Toaster, toast } from 'sonner';
 import {
   LayoutDashboard,
@@ -27,7 +26,6 @@ import {
   Globe2,
   Palette,
   CreditCard,
-  Database,
   HelpCircle,
   Menu,
   X,
@@ -41,13 +39,12 @@ const DashboardContent: React.FC = () => {
   const [editingChart, setEditingChart] = useState<SizeChart | null>(null);
   const [isCreatingChart, setIsCreatingChart] = useState(false);
   const [entitlement, setEntitlement] = useState<EntitlementInfo>({
-    state: 'TRIAL_ACTIVE',
+    state: 'PAID_ACTIVE',
     isEntitled: true,
     canManageCharts: true,
     canRenderChart: true,
     planTier: 'pro',
-    daysRemaining: 14,
-    isTrial: true,
+    isTrial: false,
     freeTrialAvailable: false,
   });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -102,7 +99,6 @@ const DashboardContent: React.FC = () => {
     { id: 'settings-widget', labelKey: 'navigation.widget', icon: Palette },
     { id: 'settings-localization', labelKey: 'navigation.localization', icon: Globe2 },
     { id: 'settings-billing', labelKey: 'navigation.billing', icon: CreditCard },
-    { id: 'settings-data', labelKey: 'navigation.data', icon: Database },
   ];
 
   return (
@@ -138,76 +134,78 @@ const DashboardContent: React.FC = () => {
 
         {/* Sidebar */}
         <aside
-          className={`w-full md:w-64 border-r border-border bg-card/60 shrink-0 p-4 space-y-6 md:block ${
-            mobileMenuOpen ? 'block' : 'hidden'
+          className={`w-full md:w-64 border-r border-border bg-card/60 shrink-0 p-4 md:sticky md:top-0 md:h-screen md:overflow-y-auto flex flex-col justify-between z-30 ${
+            mobileMenuOpen ? 'block' : 'hidden md:flex'
           }`}
         >
-          {/* Brand Header */}
-          <div className="hidden md:flex items-center gap-2.5 px-2 py-1">
-            <div className="p-1.5 rounded-lg bg-primary/10 text-primary font-bold">
-              📏
+          <div className="space-y-6">
+            {/* Brand Header */}
+            <div className="hidden md:flex items-center gap-2.5 px-2 py-1">
+              <div className="p-1.5 rounded-lg bg-primary/10 text-primary font-bold">
+                📏
+              </div>
+              <div>
+                <h1 className="font-bold text-sm leading-tight text-foreground">Stores Size Chart</h1>
+                <span className="text-[11px] text-muted-foreground font-medium">&amp; Fit Guide</span>
+              </div>
             </div>
-            <div>
-              <h1 className="font-bold text-sm leading-tight text-foreground">Stores Size Chart</h1>
-              <span className="text-[11px] text-muted-foreground font-medium">&amp; Fit Guide</span>
+
+            {/* Primary Navigation */}
+            <div className="space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTab(item.id);
+                      setEditingChart(null);
+                      setIsCreatingChart(false);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                      isActive
+                        ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{t(item.labelKey)}</span>
+                  </button>
+                );
+              })}
             </div>
-          </div>
 
-          {/* Primary Navigation */}
-          <div className="space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    setEditingChart(null);
-                    setIsCreatingChart(false);
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                    isActive
-                      ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                  }`}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span>{t(item.labelKey)}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Settings Sub-Navigation */}
-          <div className="space-y-1 pt-2 border-t border-border">
-            <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              {t('navigation.settings')}
-            </span>
-            {settingsItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    setEditingChart(null);
-                    setIsCreatingChart(false);
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    isActive
-                      ? 'bg-primary/10 text-primary font-semibold'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                  }`}
-                >
-                  <Icon className="h-3.5 w-3.5 shrink-0" />
-                  <span>{t(item.labelKey)}</span>
-                </button>
-              );
-            })}
+            {/* Settings Sub-Navigation */}
+            <div className="space-y-1 pt-2 border-t border-border">
+              <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                {t('navigation.settings')}
+              </span>
+              {settingsItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTab(item.id);
+                      setEditingChart(null);
+                      setIsCreatingChart(false);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      isActive
+                        ? 'bg-primary/10 text-primary font-semibold'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5 shrink-0" />
+                    <span>{t(item.labelKey)}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Plan badge footer */}
@@ -215,14 +213,14 @@ const DashboardContent: React.FC = () => {
             <div className="p-2.5 rounded-lg border border-border bg-muted/30 text-xs">
               <span className="text-[10px] text-muted-foreground block">{t('navigation.currentPlan')}</span>
               <span className="font-bold text-foreground">
-                {entitlement.planTier === 'pro' ? 'Pro Plan' : 'Starter Plan'}
+                {entitlement.planTier === 'pro' ? t('billing.proPlan') : t('billing.starterPlan')}
               </span>
             </div>
           </div>
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-4 md:p-8 max-w-7xl overflow-y-auto">
+        <main className="flex-1 p-4 md:p-8 max-w-7xl w-full min-w-0 overflow-y-auto">
           {activeTab === 'overview' && (
             <OverviewView
               onNavigate={(tab) => setActiveTab(tab)}
@@ -259,7 +257,6 @@ const DashboardContent: React.FC = () => {
               onUpgradeClick={() => toast.info('Redirecting to Wix App Market checkout...')}
             />
           )}
-          {activeTab === 'settings-data' && <DataSettingsView />}
         </main>
       </div>
     </div>

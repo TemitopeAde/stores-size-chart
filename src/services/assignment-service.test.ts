@@ -31,3 +31,17 @@ test('assignment-service: resolves chart for product id', async () => {
   assert.ok(resolved._id);
 });
 
+test('assignment-service: all products storewide assignment resolution', async () => {
+  await createAssignment({
+    chartId: 'chart-womens-dresses-default',
+    assignmentType: 'all',
+    priority: 5,
+    active: true,
+  });
+
+  const resolved = await resolveChartForProduct('prod-unmatched-anywhere-999');
+  assert.ok(resolved !== null);
+  assert.strictEqual(resolved._id, 'chart-womens-dresses-default');
+});
+
+

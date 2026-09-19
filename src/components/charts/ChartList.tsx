@@ -259,6 +259,7 @@ export const ChartList: React.FC<ChartListProps> = ({ onCreateClick, onEditClick
             <div className="flex items-center justify-between p-3 border-t border-border bg-muted/20 text-xs text-muted-foreground">
               <span>
                 {t('common.items', { count: data.totalCount })} &middot; Page {data.page} of {data.totalPages}
+                {t('common.items', { count: data.totalCount })} &middot; {t('common.pageOf', { page: data.page, totalPages: data.totalPages })}
               </span>
               <div className="flex items-center gap-1.5">
                 <Button

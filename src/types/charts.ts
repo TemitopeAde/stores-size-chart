@@ -38,6 +38,10 @@ export interface FitFinderConfig {
   askAge?: boolean;
   allowFitPreferences?: boolean; // Slim, Regular, Relaxed
   weights?: FitFinderMeasurementWeight[];
+  aiEnabled?: boolean;
+  deepseekApiKey?: string;
+  aiModel?: 'deepseek-chat' | 'deepseek-reasoner';
+  aiCustomInstructions?: string;
 }
 
 export interface SizeChart {

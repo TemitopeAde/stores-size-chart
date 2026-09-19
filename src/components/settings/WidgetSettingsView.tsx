@@ -60,6 +60,7 @@ export const WidgetSettingsView: React.FC = () => {
   const handleResetDefaults = () => {
     setSettings(DEFAULT_WIDGET_SETTINGS);
     toast.success('Reset to default widget styling');
+    toast.success(t('widget.resetSuccess'));
   };
 
   if (loading) {
@@ -174,6 +175,7 @@ export const WidgetSettingsView: React.FC = () => {
 
               <div>
                 <label className="text-[11px] text-muted-foreground block mb-1">Border Radius</label>
+                <label className="text-[11px] text-muted-foreground block mb-1">{t('widget.borderRadius')}</label>
                 <Input
                   value={trigger.borderRadius || '6px'}
                   onChange={(e) =>
@@ -188,6 +190,7 @@ export const WidgetSettingsView: React.FC = () => {
 
               <div>
                 <label className="text-[11px] text-muted-foreground block mb-1">Padding</label>
+                <label className="text-[11px] text-muted-foreground block mb-1">{t('widget.padding')}</label>
                 <Input
                   value={trigger.padding || '8px 16px'}
                   onChange={(e) =>
@@ -297,6 +300,7 @@ export const WidgetSettingsView: React.FC = () => {
 
               <div>
                 <label className="text-[11px] text-muted-foreground block mb-1">Highlight Text</label>
+                <label className="text-[11px] text-muted-foreground block mb-1">{t('widget.highlightTextColor')}</label>
                 <div className="flex items-center gap-1.5">
                   <input
                     type="color"
@@ -385,6 +389,7 @@ export const WidgetSettingsView: React.FC = () => {
             {/* Variant selector */}
             <div className="pt-2">
               <label className="text-[11px] font-semibold text-muted-foreground block mb-1">Select Size:</label>
+              <label className="text-[11px] font-semibold text-muted-foreground block mb-1">{t('widget.selectSize')}</label>
               <div className="flex gap-1.5">
                 {['S', 'M', 'L', 'XL'].map((s) => (
                   <button
@@ -436,6 +441,7 @@ export const WidgetSettingsView: React.FC = () => {
           <div className="p-3 space-y-3 bg-card">
             <div className="flex items-center justify-between">
               <h4 className="font-bold text-xs text-foreground">Men's Oxford Shirt Guide</h4>
+              <h4 className="font-bold text-xs text-foreground">{t('widget.sampleGuideTitle')}</h4>
               {/* Unit Switcher */}
               <div className="inline-flex rounded border p-0.5 bg-muted text-[10px]">
                 <button
@@ -466,6 +472,9 @@ export const WidgetSettingsView: React.FC = () => {
                     <th className="p-2 text-left font-bold">Size</th>
                     <th className="p-2 text-left font-bold">Chest</th>
                     <th className="p-2 text-left font-bold">Waist</th>
+                    <th className="p-2 text-left font-bold">{t('presets.size')}</th>
+                    <th className="p-2 text-left font-bold">{t('presets.chest')}</th>
+                    <th className="p-2 text-left font-bold">{t('presets.waist')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -501,9 +510,11 @@ export const WidgetSettingsView: React.FC = () => {
               <div className="flex items-center gap-1.5 text-blue-900 dark:text-blue-200">
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
                 <span>Not sure? Find your exact size</span>
+                <span>{t('widget.notSureFindSize')}</span>
               </div>
               <Button size="sm" variant="outline" className="h-6 text-[10px] px-2">
                 Calculate
+                {t('widget.calculate')}
               </Button>
             </div>
           </div>

@@ -164,6 +164,33 @@ export const dashboardApi = {
   async getEntitlement(): Promise<EntitlementInfo> {
     return apiRequest<EntitlementInfo>('/api/billing/entitlement');
   },
+
+  // Fit Calculation & Testing
+  async calculateFit(
+    chartId: string,
+    measurements: Record<string, any>,
+    unit: 'cm' | 'in' = 'cm',
+    useAi: boolean = true
+  ): Promise<any> {
+    const res = await authenticatedFetch('/api/fit/calculate', {
+      method: 'POST',
+      body: JSON.stringify({ chartId, ...measurements, unit, useAi }),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.error?.message || 'Failed to calculate fit recommendation');
+    }
+    return data.data;
+  },
+
+  // AI & DeepSeek
+  async testDeepSeekConnection(apiKey: string, model: string = 'deepseek-chat'): Promise<{ success: boolean; message: string; model?: string }> {
+    const res = await authenticatedFetch('/api/fit/test-ai', {
+      method: 'POST',
+      body: JSON.stringify({ apiKey, model }),
+    });
+    return res.json();
+  },
 };
 
 export const getWidgetSettings = dashboardApi.getWidgetSettings;

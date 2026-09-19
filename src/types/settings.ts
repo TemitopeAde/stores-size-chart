@@ -54,6 +54,10 @@ export interface FitFinderSettings {
   buttonTextColor: string;
   cardBackground: string;
   showProgressIndicator: boolean;
+  aiEnabled?: boolean;
+  deepseekApiKey?: string;
+  aiModel?: 'deepseek-chat' | 'deepseek-reasoner';
+  aiCustomInstructions?: string;
 }
 
 export interface WidgetSettings {
@@ -121,6 +125,8 @@ export const DEFAULT_WIDGET_SETTINGS: WidgetSettings = {
     buttonTextColor: '#ffffff',
     cardBackground: '#f0f9ff',
     showProgressIndicator: true,
+    aiEnabled: true,
+    aiModel: 'deepseek-chat',
   },
 };
 

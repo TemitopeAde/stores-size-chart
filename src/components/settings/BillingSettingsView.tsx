@@ -43,9 +43,11 @@ export const BillingSettingsView: React.FC<BillingSettingsViewProps> = ({
               {entitlement.state === 'PAID_ACTIVE' && t('billing.subscriptionActive')}
               {entitlement.state === 'TRIAL_ACTIVE' && t('billing.trialActive')}
               {entitlement.state === 'TRIAL_AVAILABLE' && t('billing.trialAvailable')}
+              {(entitlement.state === 'TRIAL_AVAILABLE' || entitlement.state === 'FREE_TRIAL_AVAILABLE') && t('billing.trialAvailable')}
               {entitlement.state === 'CANCEL_PENDING_EXPIRATION' && t('billing.subscriptionCancelled')}
               {entitlement.state === 'EXPIRED' && t('billing.paidExpired')}
               {entitlement.state === 'FREE_NO_TRIAL' && t('billing.trialExpired')}
+              {(entitlement.state === 'FREE_NO_TRIAL' || entitlement.state === 'TRIAL_EXPIRED') && t('billing.trialExpired')}
               {entitlement.state === 'BILLING_UNKNOWN' && t('billing.billingUnknown')}
             </Badge>
           </div>
@@ -54,7 +56,7 @@ export const BillingSettingsView: React.FC<BillingSettingsViewProps> = ({
               ? t('billing.daysRemaining', { count: entitlement.daysRemaining })
               : entitlement.expirationDate
               ? t('billing.activeUntil', { date: formatDate(entitlement.expirationDate) })
-              : 'Managed through Wix App Market'}
+              : t('billing.managedThroughWix')}
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-2">
@@ -68,17 +70,17 @@ export const BillingSettingsView: React.FC<BillingSettingsViewProps> = ({
                   {entitlement.planTier === 'pro' ? t('billing.proPlan') : t('billing.starterPlan')}
                 </h4>
                 <p className="text-xs text-muted-foreground">
-                  Unlimited size charts, category assignments, Smart Fit Finder, and 20 languages.
+                  {entitlement.planTier === 'pro' ? t('billing.proPlanDesc') : t('billing.starterPlanDesc')}
                 </p>
               </div>
             </div>
 
             <Button onClick={onUpgradeClick} className="shrink-0 text-xs">
-              {entitlement.state === 'TRIAL_AVAILABLE'
+              {entitlement.state === 'TRIAL_AVAILABLE' || entitlement.state === 'FREE_TRIAL_AVAILABLE'
                 ? t('billing.startTrialBtn')
-                : entitlement.state === 'EXPIRED' || entitlement.state === 'FREE_NO_TRIAL'
+                : entitlement.state === 'EXPIRED' || entitlement.state === 'FREE_NO_TRIAL' || entitlement.state === 'TRIAL_EXPIRED'
                 ? t('billing.subscribeBtn')
-                : 'Manage Subscription'}
+                : t('billing.manageSubscriptionBtn')}
             </Button>
           </div>
         </CardContent>
@@ -88,21 +90,21 @@ export const BillingSettingsView: React.FC<BillingSettingsViewProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold">Starter Plan</CardTitle>
-            <CardDescription>Basic chart tables</CardDescription>
+            <CardTitle className="text-sm font-semibold">{t('billing.starterPlan')}</CardTitle>
+            <CardDescription>{t('billing.starterSubtitle')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-xs">
             <div className="flex items-center gap-2 text-foreground">
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              <span>Up to 5 Size Charts</span>
+              <span>{t('billing.featureUpTo5')}</span>
             </div>
             <div className="flex items-center gap-2 text-foreground">
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              <span>Product Page Site Plugin</span>
+              <span>{t('billing.featureSitePlugin')}</span>
             </div>
             <div className="flex items-center gap-2 text-foreground">
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              <span>CM / IN Conversion</span>
+              <span>{t('billing.featureUnitConversion')}</span>
             </div>
           </CardContent>
         </Card>
@@ -110,31 +112,31 @@ export const BillingSettingsView: React.FC<BillingSettingsViewProps> = ({
         <Card className="border-primary/50">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-primary">Pro Plan (All Features)</CardTitle>
-              <Badge variant="default" className="text-[10px]">Recommended</Badge>
+              <CardTitle className="text-sm font-semibold text-primary">{t('billing.proPlanTitle')}</CardTitle>
+              <Badge variant="default" className="text-[10px]">{t('billing.recommendedBadge')}</Badge>
             </div>
-            <CardDescription>Full conversion suite</CardDescription>
+            <CardDescription>{t('billing.proSubtitle')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-xs">
             <div className="flex items-center gap-2 text-foreground">
               <CheckCircle2 className="h-4 w-4 text-primary" />
-              <span>Unlimited Size Charts & Measurements</span>
+              <span>{t('billing.featureUnlimitedCharts')}</span>
             </div>
             <div className="flex items-center gap-2 text-foreground">
               <CheckCircle2 className="h-4 w-4 text-primary" />
-              <span>Category & Advanced Rule Assignments</span>
+              <span>{t('billing.featureCategoryRules')}</span>
             </div>
             <div className="flex items-center gap-2 text-foreground">
               <CheckCircle2 className="h-4 w-4 text-primary" />
-              <span>Smart Fit Finder (Deterministic recommendations)</span>
+              <span>{t('billing.featureFitFinder')}</span>
             </div>
             <div className="flex items-center gap-2 text-foreground">
               <CheckCircle2 className="h-4 w-4 text-primary" />
-              <span>Realtime Variant-Aware Highlighting</span>
+              <span>{t('billing.featureVariantHighlight')}</span>
             </div>
             <div className="flex items-center gap-2 text-foreground">
               <CheckCircle2 className="h-4 w-4 text-primary" />
-              <span>20 Languages + Full RTL Support</span>
+              <span>{t('billing.feature20Languages')}</span>
             </div>
           </CardContent>
         </Card>

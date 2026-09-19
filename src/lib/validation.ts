@@ -40,6 +40,10 @@ export const FitFinderConfigSchema = z.object({
       })
     )
     .optional(),
+  aiEnabled: z.boolean().optional(),
+  deepseekApiKey: z.string().optional(),
+  aiModel: z.enum(['deepseek-chat', 'deepseek-reasoner']).optional(),
+  aiCustomInstructions: z.string().optional(),
 });
 
 export const SizeChartPayloadSchema = z.object({
@@ -66,7 +70,7 @@ export const AssignmentConditionSchema = z.object({
 export const ChartAssignmentPayloadSchema = z.object({
   _id: z.string().optional(),
   chartId: z.string().min(1, 'validation.chartRequired'),
-  assignmentType: z.enum(['product', 'category', 'rule', 'default']),
+  assignmentType: z.enum(['all', 'product', 'category', 'rule', 'default']),
   productId: z.string().optional(),
   productIds: z.array(z.string()).optional(),
   categoryId: z.string().optional(),
@@ -88,6 +92,12 @@ export const CalculateFitRequestSchema = z.object({
   age: z.number().optional(),
   preference: z.enum(['slim', 'regular', 'relaxed']).optional(),
   unit: z.enum(['cm', 'in']).default('cm'),
+  useAi: z.boolean().optional(),
+});
+
+export const TestDeepSeekRequestSchema = z.object({
+  apiKey: z.string().min(1, 'API key is required'),
+  model: z.enum(['deepseek-chat', 'deepseek-reasoner']).default('deepseek-chat'),
 });
 
 export const TrackAnalyticsEventSchema = z.object({

@@ -23,7 +23,7 @@ export const GET: APIRoute = async ({ url }) => {
       );
     }
 
-    // Resolve matching chart deterministically: Product -> Rule -> Category -> Default
+    // Resolve matching chart deterministically: Product -> Rule -> Category -> All Products -> Default
     const chart = await resolveChartForProduct(productId);
     const settings = await getWidgetSettings();
 

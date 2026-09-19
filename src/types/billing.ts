@@ -27,18 +27,26 @@ export interface EntitlementInfo {
 
 export interface WixAppInstanceData {
   instanceId?: string;
+  appName?: string;
+  appVersion?: string | null;
   appDefId?: string;
   isFree?: boolean;
   freeTrialAvailable?: boolean;
   billing?: {
     packageName?: string;
     vendorProductId?: string;
-    expirationDate?: string;
+    billingCycle?: string;
+    timeStamp?: string;
+    expirationDate?: string | null;
+    autoRenewing?: boolean | null;
+    invoiceId?: string | null;
+    source?: string | null;
     freeTrialInfo?: {
+      status?: 'IN_PROGRESS' | 'ENDED' | 'NOT_AVAILABLE' | string;
+      endDate?: Date | string | null;
       isFreeTrial?: boolean;
       daysRemaining?: number;
     };
-    autoRenewing?: boolean;
   };
+  permissions?: string[];
 }
-

@@ -27,9 +27,11 @@ export const GeneralSettingsView: React.FC = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const current = await dashboardApi.getWidgetSettings().catch(() => null);
       await dashboardApi.updateWidgetSettings({
         defaultUnit,
         syncWithSiteTheme: syncTheme,
+        fitFinderSettings: current?.fitFinderSettings,
       });
       toast.success(t('notifications.settingsSaved'));
     } catch (err: any) {
@@ -60,12 +62,15 @@ export const GeneralSettingsView: React.FC = () => {
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold">Storefront Defaults</CardTitle>
           <CardDescription>Default measurement unit and theme synchronization</CardDescription>
+          <CardTitle className="text-base font-semibold">{t('settings.storefrontDefaults')}</CardTitle>
+          <CardDescription>{t('settings.storefrontDefaultsDesc')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-foreground">{t('builder.defaultUnitLabel')}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">Initial unit shown to shoppers before they toggle.</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{t('settings.initialUnitDesc')}</p>
             </div>
             <div className="inline-flex rounded-md border border-input p-0.5 bg-muted">
               <button
@@ -94,6 +99,7 @@ export const GeneralSettingsView: React.FC = () => {
               <p className="text-xs font-semibold text-foreground">{t('settings.themeSync')}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 Automatically inherit fonts and colors from the active Wix site theme.
+                {t('settings.themeSyncDesc')}
               </p>
             </div>
             <Switch checked={syncTheme} onCheckedChange={setSyncTheme} />

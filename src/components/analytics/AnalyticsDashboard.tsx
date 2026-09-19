@@ -116,31 +116,37 @@ export const AnalyticsDashboard: React.FC = () => {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold">{t('analytics.trends')}</CardTitle>
-            <CardDescription>Daily breakdown of guide views and fit calculations</CardDescription>
+            <CardDescription>{t('analytics.trendsDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {summary?.dailyViews.map((item, idx) => (
-                <div key={idx} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-foreground">{item.date}</span>
-                    <span className="text-muted-foreground">
-                      {item.views} views &middot; {item.fitFinder} fit finder
-                    </span>
+            {summary?.dailyViews && summary.dailyViews.some((d) => d.views > 0 || d.fitFinder > 0) ? (
+              <div className="space-y-3">
+                {summary.dailyViews.map((item, idx) => (
+                  <div key={idx} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium text-foreground">{item.date}</span>
+                      <span className="text-muted-foreground">
+                        {t('analytics.dailyStats', { views: item.views, fitFinder: item.fitFinder })}
+                      </span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2 flex overflow-hidden">
+                      <div
+                        className="bg-primary h-full transition-all"
+                        style={{ width: `${Math.min(100, (item.views / 25) * 100)}%` }}
+                      />
+                      <div
+                        className="bg-purple-500 h-full transition-all"
+                        style={{ width: `${Math.min(100, (item.fitFinder / 25) * 100)}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-muted rounded-full h-2 flex overflow-hidden">
-                    <div
-                      className="bg-primary h-full transition-all"
-                      style={{ width: `${Math.min(100, (item.views / 25) * 100)}%` }}
-                    />
-                    <div
-                      className="bg-purple-500 h-full transition-all"
-                      style={{ width: `${Math.min(100, (item.fitFinder / 25) * 100)}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-8 text-center text-xs text-muted-foreground">
+                {t('analytics.noActivity')}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -148,22 +154,28 @@ export const AnalyticsDashboard: React.FC = () => {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold">{t('analytics.topCharts')}</CardTitle>
-            <CardDescription>Most viewed size charts in your store</CardDescription>
+            <CardDescription>{t('analytics.topChartsDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {summary?.topCharts.map((chart, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 rounded-lg border border-border">
-                  <div className="flex items-center gap-2.5">
-                    <span className="font-mono text-xs text-muted-foreground font-bold">{idx + 1}.</span>
-                    <span className="font-medium text-foreground text-xs">{chart.name}</span>
+            {summary?.topCharts && summary.topCharts.length > 0 ? (
+              <div className="space-y-3">
+                {summary.topCharts.map((chart, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 rounded-lg border border-border">
+                    <div className="flex items-center gap-2.5">
+                      <span className="font-mono text-xs text-muted-foreground font-bold">{idx + 1}.</span>
+                      <span className="font-medium text-foreground text-xs">{chart.name}</span>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      {t('analytics.viewsCount', { count: chart.views })}
+                    </Badge>
                   </div>
-                  <Badge variant="secondary" className="text-xs">
-                    {chart.views} views
-                  </Badge>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-8 text-center text-xs text-muted-foreground">
+                {t('analytics.noViews')}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -173,35 +185,41 @@ export const AnalyticsDashboard: React.FC = () => {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold">{t('analytics.sizeDistribution')}</CardTitle>
-            <CardDescription>Sizes most frequently recommended by Fit Finder</CardDescription>
+            <CardDescription>{t('analytics.sizeDistributionDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {Object.entries(summary?.sizeDistribution || {}).map(([size, count]) => (
-                <div key={size} className="p-3.5 rounded-lg border border-border bg-card text-center">
-                  <span className="text-xs text-muted-foreground block">Size</span>
-                  <span className="text-lg font-bold text-primary block my-0.5">{size}</span>
-                  <span className="text-xs font-medium text-foreground">{count} times</span>
-                </div>
-              ))}
-            </div>
+            {summary?.sizeDistribution && Object.keys(summary.sizeDistribution).length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {Object.entries(summary.sizeDistribution).map(([size, count]) => (
+                  <div key={size} className="p-3.5 rounded-lg border border-border bg-card text-center">
+                    <span className="text-xs text-muted-foreground block">{t('analytics.sizeLabel')}</span>
+                    <span className="text-lg font-bold text-primary block my-0.5">{size}</span>
+                    <span className="text-xs font-medium text-foreground">{t('analytics.timesCount', { count })}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-8 text-center text-xs text-muted-foreground">
+                {t('analytics.noRecommendations')}
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold">{t('analytics.unitPreference')}</CardTitle>
-            <CardDescription>Shopper measurement unit toggles</CardDescription>
+            <CardDescription>{t('analytics.unitPreferenceDesc')}</CardDescription>
           </CardHeader>
           <CardContent className="flex items-center justify-around p-6">
             <div className="text-center">
               <span className="text-3xl font-extrabold text-foreground block">{summary?.unitPreference.cm ?? 0}</span>
-              <Badge variant="outline" className="mt-1 font-bold">CM (Metric)</Badge>
+              <Badge variant="outline" className="mt-1 font-bold">{t('analytics.metricCm')}</Badge>
             </div>
             <div className="h-12 w-[1px] bg-border" />
             <div className="text-center">
               <span className="text-3xl font-extrabold text-foreground block">{summary?.unitPreference.in ?? 0}</span>
-              <Badge variant="outline" className="mt-1 font-bold">IN (Imperial)</Badge>
+              <Badge variant="outline" className="mt-1 font-bold">{t('analytics.imperialIn')}</Badge>
             </div>
           </CardContent>
         </Card>

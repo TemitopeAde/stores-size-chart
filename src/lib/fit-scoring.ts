@@ -18,6 +18,9 @@ export interface FitRecommendationResult {
   confidence: number; // 0 to 100
   isBetweenSizes: boolean;
   alternativeSize?: string;
+  aiGenerated?: boolean;
+  aiReasoning?: string;
+  fitTips?: string;
   explanation: {
     matchingMeasurements: Array<{
       name: string;

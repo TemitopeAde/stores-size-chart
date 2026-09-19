@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from '../../i18n';
 import { EntitlementInfo } from '../../types/billing';
 import { Button } from '../ui/button';
-import { Sparkles, AlertTriangle, Clock, CheckCircle, RefreshCcw } from 'lucide-react';
+import { Sparkles, AlertTriangle, Clock, RefreshCcw } from 'lucide-react';
 
 export interface BillingStatusBannerProps {
   entitlement: EntitlementInfo;
@@ -40,7 +40,7 @@ export const BillingStatusBanner: React.FC<BillingStatusBannerProps> = ({
     );
   }
 
-  if (entitlement.state === 'TRIAL_AVAILABLE') {
+  if (entitlement.state === 'TRIAL_AVAILABLE' || entitlement.state === 'FREE_TRIAL_AVAILABLE') {
     return (
       <div className="bg-gradient-to-r from-amber-500/15 to-orange-500/15 border-b border-amber-300/80 px-4 py-2.5">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 text-sm">
@@ -78,7 +78,7 @@ export const BillingStatusBanner: React.FC<BillingStatusBannerProps> = ({
     );
   }
 
-  if (entitlement.state === 'EXPIRED' || entitlement.state === 'FREE_NO_TRIAL') {
+  if (entitlement.state === 'EXPIRED' || entitlement.state === 'TRIAL_EXPIRED' || entitlement.state === 'FREE_NO_TRIAL') {
     return (
       <div className="bg-destructive/10 border-b border-destructive/30 px-4 py-3">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-sm">
@@ -118,4 +118,3 @@ export const BillingStatusBanner: React.FC<BillingStatusBannerProps> = ({
 
   return null;
 };
-

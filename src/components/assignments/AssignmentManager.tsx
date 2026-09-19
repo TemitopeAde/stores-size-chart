@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Layers,
+  Globe,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -43,7 +44,7 @@ export const AssignmentManager: React.FC = () => {
   // New assignment modal
   const [showModal, setShowModal] = useState(false);
   const [selectedChartId, setSelectedChartId] = useState('');
-  const [assignmentType, setAssignmentType] = useState<AssignmentType>('product');
+  const [assignmentType, setAssignmentType] = useState<AssignmentType>('all');
   const [priority, setPriority] = useState(10);
 
   // Wix Stores Catalog state
@@ -86,7 +87,7 @@ export const AssignmentManager: React.FC = () => {
     setShowModal(true);
     try {
       const [prodRes, catRes] = await Promise.all([
-        dashboardApi.getProducts({ search: productSearch || undefined, limit: 30 }),
+        dashboardApi.getProducts({ search: productSearch || undefined, limit: 50 }),
         dashboardApi.getCategories(),
       ]);
       setProducts(prodRes.products);
@@ -98,7 +99,7 @@ export const AssignmentManager: React.FC = () => {
   const handleProductSearch = async (query: string) => {
     setProductSearch(query);
     try {
-      const res = await dashboardApi.getProducts({ search: query.trim() || undefined, limit: 30 });
+      const res = await dashboardApi.getProducts({ search: query.trim() || undefined, limit: 50 });
       setProducts(res.products);
     } catch {}
   };
@@ -116,7 +117,7 @@ export const AssignmentManager: React.FC = () => {
         productIds: assignmentType === 'product' ? selectedProductIds : undefined,
         categoryIds: assignmentType === 'category' ? selectedCategoryIds : undefined,
         conditions: assignmentType === 'rule' ? conditions.filter((c) => c.value.trim().length > 0) : undefined,
-        priority,
+        priority: assignmentType === 'all' ? (priority || 5) : priority,
         active: true,
       });
 
@@ -193,7 +194,7 @@ export const AssignmentManager: React.FC = () => {
                 <tr className="bg-muted/50 border-b border-border text-left">
                   <th className="p-3.5 font-semibold text-xs text-muted-foreground">{t('assignments.selectChart')}</th>
                   <th className="p-3.5 font-semibold text-xs text-muted-foreground">{t('assignments.assignmentType')}</th>
-                  <th className="p-3.5 font-semibold text-xs text-muted-foreground">Target / Rule Details</th>
+                  <th className="p-3.5 font-semibold text-xs text-muted-foreground">{t('assignments.targetDetails')}</th>
                   <th className="p-3.5 font-semibold text-xs text-muted-foreground">{t('assignments.priority')}</th>
                   <th className="p-3.5 font-semibold text-xs text-muted-foreground">{t('common.status')}</th>
                   <th className="p-3.5 font-semibold text-xs text-muted-foreground text-right">{t('common.actions')}</th>
@@ -207,6 +208,12 @@ export const AssignmentManager: React.FC = () => {
                     </td>
                     <td className="p-3.5">
                       <Badge variant="outline" className="text-[10px] capitalize">
+                        {assign.assignmentType === 'all' && (
+                          <span className="flex items-center gap-1">
+                            <Globe className="h-3 w-3 text-primary" />
+                            {t('assignments.allProducts')}
+                          </span>
+                        )}
                         {assign.assignmentType === 'product' && t('assignments.productSpecific')}
                         {assign.assignmentType === 'category' && t('assignments.categorySpecific')}
                         {assign.assignmentType === 'rule' && t('assignments.advancedRule')}
@@ -214,8 +221,11 @@ export const AssignmentManager: React.FC = () => {
                       </Badge>
                     </td>
                     <td className="p-3.5 text-xs text-muted-foreground">
+                      {assign.assignmentType === 'all' && (
+                        <span className="font-medium text-foreground">{t('assignments.allStoreProducts')}</span>
+                      )}
                       {assign.assignmentType === 'product' && (
-                        <span>{assign.productIds?.length ? `${assign.productIds.length} Products` : '1 Product'}</span>
+                        <span>{assign.productIds?.length ? t('common.productsCount', { count: assign.productIds.length }) : t('common.productsCount', { count: 1 })}</span>
                       )}
                       {assign.assignmentType === 'category' && (
                         <span>{assign.categoryId || (assign.categoryIds?.join(', ') || 'Category')}</span>
@@ -226,7 +236,7 @@ export const AssignmentManager: React.FC = () => {
                         </span>
                       )}
                       {assign.assignmentType === 'default' && (
-                        <span className="italic">Applies to all products without specific charts</span>
+                        <span className="italic">{t('assignments.defaultFallbackDesc')}</span>
                       )}
                     </td>
                     <td className="p-3.5 font-mono text-xs">{assign.priority}</td>
@@ -311,8 +321,9 @@ export const AssignmentManager: React.FC = () => {
             {/* Choose Assignment Type */}
             <div>
               <label className="text-xs font-semibold text-foreground block mb-1.5">{t('assignments.assignmentType')}</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                 {[
+                  { type: 'all', label: t('assignments.allProducts'), icon: Globe },
                   { type: 'product', label: t('assignments.productSpecific'), icon: Tag },
                   { type: 'category', label: t('assignments.categorySpecific'), icon: FolderTree },
                   { type: 'rule', label: t('assignments.advancedRule'), icon: Sliders },
@@ -325,26 +336,59 @@ export const AssignmentManager: React.FC = () => {
                       key={item.type}
                       type="button"
                       onClick={() => setAssignmentType(item.type as any)}
-                      className={`p-3 rounded-lg border text-left flex flex-col gap-1.5 transition-colors ${
+                      className={`p-3 rounded-lg border text-left flex flex-col gap-1.5 transition-colors cursor-pointer ${
                         isSelected
                           ? 'border-primary bg-primary/5 text-primary'
                           : 'border-border hover:bg-muted/40 text-foreground'
                       }`}
                     >
                       <Icon className="h-4 w-4" />
-                      <span className="text-xs font-medium">{item.label}</span>
+                      <span className="text-xs font-medium leading-tight">{item.label}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
 
+            {/* Target 0: All Products (Storewide) */}
+            {assignmentType === 'all' && (
+              <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 space-y-1.5">
+                <div className="flex items-center gap-2 text-primary font-semibold text-xs">
+                  <Globe className="h-4 w-4" />
+                  <span>{t('assignments.allProducts')}</span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t('assignments.allProductsNotice')}
+                </p>
+              </div>
+            )}
+
             {/* Target 1: Product Selector */}
             {assignmentType === 'product' && (
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground block">
-                  {t('assignments.productSelectorTitle')} ({t('assignments.selectedCount', { count: selectedProductIds.length })})
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-foreground block">
+                    {t('assignments.productSelectorTitle')} ({t('assignments.selectedCount', { count: selectedProductIds.length })})
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProductIds(products.map((p) => p.id))}
+                      className="text-[11px] font-medium text-primary hover:underline cursor-pointer"
+                    >
+                      {t('assignments.selectAll')}
+                    </button>
+                    <span className="text-muted-foreground text-[10px]">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProductIds([])}
+                      className="text-[11px] font-medium text-muted-foreground hover:underline cursor-pointer"
+                    >
+                      {t('assignments.deselectAll')}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
@@ -380,7 +424,27 @@ export const AssignmentManager: React.FC = () => {
             {/* Target 2: Category Selector */}
             {assignmentType === 'category' && (
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground block">{t('assignments.categorySelectorTitle')}</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-foreground block">{t('assignments.categorySelectorTitle')}</label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategoryIds(categories.map((c) => c.id))}
+                      className="text-[11px] font-medium text-primary hover:underline cursor-pointer"
+                    >
+                      {t('assignments.selectAll')}
+                    </button>
+                    <span className="text-muted-foreground text-[10px]">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategoryIds([])}
+                      className="text-[11px] font-medium text-muted-foreground hover:underline cursor-pointer"
+                    >
+                      {t('assignments.deselectAll')}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="border border-border rounded-md max-h-48 overflow-y-auto divide-y divide-border">
                   {categories.map((c) => {
                     const isChecked = selectedCategoryIds.includes(c.id);
@@ -423,10 +487,10 @@ export const AssignmentManager: React.FC = () => {
                       }}
                       className="h-8 rounded-md border border-input bg-background px-2 text-xs"
                     >
-                      <option value="name">Product Title</option>
-                      <option value="sku">SKU</option>
-                      <option value="category">Category</option>
-                      <option value="price">Price</option>
+                      <option value="name">{t('assignments.ruleFieldProductTitle')}</option>
+                      <option value="sku">{t('assignments.ruleFieldSku')}</option>
+                      <option value="category">{t('assignments.ruleFieldCategory')}</option>
+                      <option value="price">{t('assignments.ruleFieldPrice')}</option>
                     </select>
 
                     <select
@@ -438,9 +502,9 @@ export const AssignmentManager: React.FC = () => {
                       }}
                       className="h-8 rounded-md border border-input bg-background px-2 text-xs"
                     >
-                      <option value="contains">{t('assignments.nameContains')}</option>
-                      <option value="equals">equals exactly</option>
-                      <option value="startsWith">starts with</option>
+                      <option value="contains">{t('assignments.ruleOpContains')}</option>
+                      <option value="equals">{t('assignments.ruleOpEquals')}</option>
+                      <option value="startsWith">{t('assignments.ruleOpStartsWith')}</option>
                     </select>
 
                     <Input
@@ -450,7 +514,7 @@ export const AssignmentManager: React.FC = () => {
                         next[cIdx].value = e.target.value;
                         setConditions(next);
                       }}
-                      placeholder="e.g. Oxford, Nike, Shoes"
+                      placeholder={t('assignments.ruleValuePlaceholder')}
                       className="h-8 text-xs"
                     />
                   </div>

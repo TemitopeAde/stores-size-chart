@@ -1,4 +1,4 @@
-export type AssignmentType = 'product' | 'category' | 'rule' | 'default';
+export type AssignmentType = 'all' | 'product' | 'category' | 'rule' | 'default';
 
 export type RuleField = 'name' | 'category' | 'sku' | 'price';
 export type RuleOperator = 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'greaterThan' | 'lessThan';
